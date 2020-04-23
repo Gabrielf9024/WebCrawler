@@ -1,13 +1,34 @@
 import re
+from bs4 import BeautifulSoup
 from urllib.parse import urlparse
+
+frontier = 0;
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
-    return [link for link in links if is_valid(link)]
+    return [link for link in links if is_valid(link)and check_for_uci(link)]
 
 def extract_next_links(url, resp):
-    # Implementation requred.
-    return list()
+    frontier_list = list()
+
+    if (resp.raw_response != None):
+        soup = BeautifulSoup(resp.raw_response.content,"html.parser")
+        for link in soup.find_all('a'):
+            frontier_list.append(link.get('href'));
+        
+    return frontier_list
+
+def check_frontier(url):
+    print (frontier)
+    return url in frontier;
+
+def check_for_uci(url):
+    parsed = urlparse(url)
+    urlRegex = re.compile('^(www.ics.uci.edu|www.cs.uci.edu|www.informatics.uci.edu|www.stat.uci.edu|www.today.uci.edu/department/information_computer_sciences)$')
+    if(re.match(urlRegex, parsed.netloc)):
+        frontier++;
+        return True
+    
 
 def is_valid(url):
     try:
