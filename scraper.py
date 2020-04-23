@@ -24,7 +24,7 @@ def check_frontier(url):
 
 def check_for_uci(url):
     parsed = urlparse(url)
-    urlRegex = re.compile('^(www.ics.uci.edu|www.cs.uci.edu|www.informatics.uci.edu|www.stat.uci.edu|www.today.uci.edu/department/information_computer_sciences)$')
+    urlRegex = re.compile('^([\w|.]*)(ics.uci.edu/|cs.uci.edu/|informatics.uci.edu/|stat.uci.edu/|today.uci.edu/department/information_computer_sciences/)$')
     if(re.match(urlRegex, parsed.netloc)):
         frontier++;
         return True
