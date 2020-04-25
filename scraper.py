@@ -1,5 +1,6 @@
 import re
 from bs4 import BeautifulSoup
+from reppy.robots import Robots
 from urllib.parse import urlparse
 
 def scraper(url, resp):
@@ -7,12 +8,12 @@ def scraper(url, resp):
     return [link for link in links if is_valid(link)and check_for_uci(link)]
 
 def extract_next_links(url, resp):
-    frontier_list = list()
-
-    if (resp.raw_response != None):
+    frontier_list = list() 
+    if (resp.raw_response != None and (resp.status >= 200 and resp.status <= 599)):
         soup = BeautifulSoup(resp.raw_response.content,"html.parser")
         for link in soup.find_all('a'):
-            frontier_list.append(link.get('href')); 
+            if link.get('href') != None and robot.allowed(link.get('href'),'IR S20 33805012,43145172,61658242'):
+                frontier_list.append(link.get('href')); 
     return frontier_list
 
 def check_for_uci(url):
