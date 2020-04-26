@@ -6,19 +6,25 @@ from urllib.parse import urlparse
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
-    return [link for link in links if is_valid(link) and check_for_uci(link) and status_valid(resp)]
+    return [link for link in links if is_valid(link)]
 
 def extract_next_links(url, resp):
-    frontier_list = list() 
-    if (resp.raw_response != None and (resp.status >= 200 and resp.status <= 599)):
-        soup = BeautifulSoup(resp.raw_response.content,"html.parser")
-        for link in soup.find_all('a'):
-            if link.get('href') != None and robot.allowed(link.get('href'),'IR S20 33805012,43145172,61658242'):
-                frontier_list.append(link.get('href')); 
+    frontier_list = list()
+
+    #fetches the robots.txt
+    robot_link = get_link_robot(url);
+    if robot_link != None:
+        robot = Robots.fetch(robot_link);
+        if (resp.raw_response != None and resp.status >= 200 and check_for_trap(url) == False):
+            soup = BeautifulSoup(resp.raw_response.content,"html.parser")
+            extract_tokens(soup)
+            for link in soup.find_all('a'):
+                if link.get('href') != None and check_if_valid(url) and check_for_trap(url) == False and robot.allowed(link.get('href'),'IR S20 33805012,43145172,61658242'):
+                    frontier_list.append(link.get('href'));
+
     return frontier_list
 
-def extract_tokens(url, resp):
-    soup = BeautifulSoup(resp.raw_response.content,'html.parser')
+def extract_tokens(soup):
     raw = soup.get_text()
     all_tokens = word_tokenize(raw)
 
@@ -26,12 +32,32 @@ def extract_tokens(url, resp):
     # not complete
     # testing if i should use global variable or read from file
 
-def check_for_uci(url):
+#Checks whether the url is a trap
+def check_for_trap(url):
     parsed = urlparse(url)
-    urlRegex = re.compile('^([\w|.]*)(ics.uci.edu|cs.uci.edu|informatics.uci.edu|stat.uci.edu|today.uci.edu/department/information_computer_sciences)$')
-    if(re.match(urlRegex, parsed.netloc)):
+    urlRegex = re.compile('(/.+?)(?:\1)+|(\?|&)[\w\W]+|(calendar)')
+    if(urlRegex.search(parsed.netloc) == None):
+        return False
+    else:
         return True
+
     
+# Returns the link of the Robots.txt as a string
+def get_link(url):
+    parsed = urlparse(url)
+    urlRegex = re.compile('(?:[a-zA-z]+[.]{0,1})*(ics.uci.edu|cs.uci.edu|informatics.uci.edu|stat.uci.edu|today.uci.edu/department/information_computer_sciences)')
+    if(urlRegex.search(parsed.netloc) != None):
+        x,y = urlRegex.search(parsed.netloc).span();
+        return parsed.netloc[:y] + "/robots.txt";
+    return None
+
+#Checks if valid uci link
+def check_if_valid(url):
+    parsed = urlparse(url)
+    urlRegex = re.compile('(?:[a-zA-z]+[.]{0,1})*(ics.uci.edu|cs.uci.edu|informatics.uci.edu|stat.uci.edu|today.uci.edu/department/information_computer_sciences)')
+    if(urlRegex.search(parsed.netloc) != None):
+        return True
+    return False
 
 def is_valid(url):
     try:
