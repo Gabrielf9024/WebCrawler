@@ -4,6 +4,19 @@ from nltk import word_tokenize
 from reppy.robots import Robots
 from urllib.parse import urlparse
 
+stop_words = {'about','above','after','again','against','all','am','an','and','any','are',
+            'as', 'at', 'be', 'because', 'been', 'before', 'being', 'below', 'between',
+            'both', 'but', 'by', 'cannot', 'could', 'did', 'do', 'does', 'doing', 'down', 'during', 'each', 
+            'few', 'for', 'from','further', 'had', 'has', 'have', 'having', 'he',
+            'her', 'here', 'hers', 'herself', 'him', 'himself', 'his', 'how'
+            'if', 'in', 'into', 'is', 'it', 'its', 'itself', 'me', 'more', 'most', 'my', 'myself'
+            'no', 'nor', 'not', 'of', 'off', 'on', 'once', 'only', 'or', 'other', 'ought', 'our', 'ours',
+            'ourselves', 'out', 'over', 'own', 'same', 'she', 'should', 'so', 'some', 'such', 'than', 'that', 'the',
+            'their', 'theirs', 'them', 'themselves', 'then', 'there', 'these', 'they', 'this', 'those', 'through',
+            'to', 'too', 'under', 'until', 'up', 'very', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 
+            'while', 'who', 'whom', 'why', 'with', 'would', 'you', 'your', 'yours', 'yourself', 'yourselves'}
+html_junk = {'http', 'https', 'function', 'return', 'important','var', 'ariel', 'emoji', 'tex2jax'} # i will add more
+
 site_dict = dict();
 
 def scraper(url, resp):
@@ -27,12 +40,31 @@ def extract_next_links(url, resp):
     return frontier_list
 
 def extract_tokens(soup):
+    freq = {}
+    token_file = open('tokens.txt','r')
+    for line in token_file: # works ok, i will try to make it better
+        t,c = line.split()
+        freq[t] = int(c)
+    token_file.close()
+
     raw = soup.get_text()
     all_tokens = word_tokenize(raw)
 
-    tokens = [t for t in all_tokens if re.match('^[A-Z]*[a-z0-9]*$',t) and len(t) > 1]
-    # not complete
-    # testing if i should use global variable or read from file
+    for t in all_tokens:
+        t = t.lower()
+        if re.match('^[a-zA-Z]+[a-z0-9]+$',t) and t not in stop_words and t not in html_junk:
+            if t in freq:
+                freq[t] += 1
+            else:
+                freq[t] = 1
+
+    descending = sorted(freq.items(), key=lambda x:x[1],reverse=True)
+    open('tokens.txt','w').close() # clears previous dict
+    token_file = open('tokens.txt','w')
+
+    for t,c in descending: # writes token freq in txt file
+        token_file.write("{} {}\n".format(t,c))
+    token_file.close()
     
 # Returns the link of the Robots.txt as a string
 def get_link(url):
