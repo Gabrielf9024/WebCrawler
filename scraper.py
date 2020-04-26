@@ -4,6 +4,8 @@ from nltk import word_tokenize
 from reppy.robots import Robots
 from urllib.parse import urlparse
 
+site_dict = dict();
+
 def scraper(url, resp):
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
@@ -12,14 +14,14 @@ def extract_next_links(url, resp):
     frontier_list = list()
 
     #fetches the robots.txt
-    robot_link = get_link_robot(url);
-    if robot_link != None:
+    if check_if_valid(url):
+        robot_link = get_link_robot(url);
         robot = Robots.fetch(robot_link);
-        if (resp.raw_response != None and resp.status >= 200 and check_for_trap(url) == False):
+        if (resp.status >= 200 and resp.raw_response != None):
             soup = BeautifulSoup(resp.raw_response.content,"html.parser")
             extract_tokens(soup)
             for link in soup.find_all('a'):
-                if link.get('href') != None and check_if_valid(url) and check_for_trap(url) == False and robot.allowed(link.get('href'),'IR S20 33805012,43145172,61658242'):
+                if link.get('href') != None and robot.allowed(link.get('href'),'IR S20 33805012,43145172,61658242'):
                     frontier_list.append(link.get('href'));
 
     return frontier_list
@@ -31,34 +33,48 @@ def extract_tokens(soup):
     tokens = [t for t in all_tokens if re.match('^[A-Z]*[a-z0-9]*$',t) and len(t) > 1]
     # not complete
     # testing if i should use global variable or read from file
-
-#Checks whether the url is a trap
-def check_for_trap(url):
-    parsed = urlparse(url)
-    urlRegex = re.compile('(/.+?)(?:\1)+|(\?|&)[\w\W]+|(calendar)')
-    if(urlRegex.search(parsed.netloc) == None):
-        return False
-    else:
-        return True
-
     
 # Returns the link of the Robots.txt as a string
 def get_link(url):
     parsed = urlparse(url)
-    urlRegex = re.compile('(?:[a-zA-z]+[.]{0,1})*(ics.uci.edu|cs.uci.edu|informatics.uci.edu|stat.uci.edu|today.uci.edu/department/information_computer_sciences)')
     if(urlRegex.search(parsed.netloc) != None):
-        x,y = urlRegex.search(parsed.netloc).span();
-        return parsed.netloc[:y] + "/robots.txt";
-    return None
+        return parsed.netloc + "/robots.txt";
 
-#Checks if valid uci link
+#Checks if valid uci link and not a trap
 def check_if_valid(url):
-    parsed = urlparse(url)
-    urlRegex = re.compile('(?:[a-zA-z]+[.]{0,1})*(ics.uci.edu|cs.uci.edu|informatics.uci.edu|stat.uci.edu|today.uci.edu/department/information_computer_sciences)')
-    if(urlRegex.search(parsed.netloc) != None):
-        return True
-    return False
 
+    try:
+        parsed = urlparse(url)
+
+        is_uci = False
+        is_trap = True
+        
+        urlRegex = re.compile('(?:([a-zA-z]+[.]{0,1})*(ics.uci.edu)|(cs.uci.edu)|(informatics.uci.edu)|(stat.uci.edu)|(today.uci.edu/department/information_computer_sciences))')
+        if(urlRegex.search(parsed.netloc) != None):
+            is_uci = True
+            
+        pathRegex = re.compile('(/.+?)(?:\1)+|(\?|&)[\w\W]+|(calendar)')
+        if(pathRegex.search(parsed.path) == None and parsed.query == ''):
+            is_trap = False
+            
+        valid = (is_uci and is_trap == False)
+        
+        if valid == True:
+            try:
+                site_dict[parsed.netloc] = (1,list())
+            except:
+                if parsed.path not in site_dict[parsed.netloc][1]:
+                    site_dict[parsed.netloc][0]++
+                    site_dict[parsed.netloc][1].append(parsed.path)
+                else:
+                    valid = False
+
+        return valid
+    
+    except TypeError:
+        print ("check_if_valid internal error for ", parsed)
+        raise
+        
 def is_valid(url):
     try:
         parsed = urlparse(url)
