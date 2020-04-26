@@ -1,11 +1,12 @@
 import re
 from bs4 import BeautifulSoup
+from nltk import word_tokenize
 from reppy.robots import Robots
 from urllib.parse import urlparse
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
-    return [link for link in links if is_valid(link)and check_for_uci(link)]
+    return [link for link in links if is_valid(link) and check_for_uci(link) and status_valid(resp)]
 
 def extract_next_links(url, resp):
     frontier_list = list() 
@@ -15,6 +16,15 @@ def extract_next_links(url, resp):
             if link.get('href') != None and robot.allowed(link.get('href'),'IR S20 33805012,43145172,61658242'):
                 frontier_list.append(link.get('href')); 
     return frontier_list
+
+def extract_tokens(url, resp):
+    soup = BeautifulSoup(resp.raw_response.content,'html.parser')
+    raw = soup.get_text()
+    all_tokens = word_tokenize(raw)
+
+    tokens = [t for t in all_tokens if re.match('^[A-Z]*[a-z0-9]*$',t) and len(t) > 1]
+    # not complete
+    # testing if i should use global variable or read from file
 
 def check_for_uci(url):
     parsed = urlparse(url)
@@ -41,3 +51,8 @@ def is_valid(url):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
+
+# only crawls up urls with status 200
+# may need to change this
+def status_valid(resp):
+    return resp.status == 200
