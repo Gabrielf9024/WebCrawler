@@ -77,8 +77,3 @@ def is_valid(url):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
-
-# only crawls up urls with status 200
-# may need to change this
-def status_valid(resp):
-    return resp.status == 200
