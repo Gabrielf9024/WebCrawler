@@ -93,7 +93,7 @@ def check_if_valid(url):
         
         if valid == True:
             try:
-                site_dict[parsed.netloc] = (1,list())
+                site_dict[parsed.netloc] = (1,[parsed.path])
             except:
                 if parsed.path not in site_dict[parsed.netloc][1]:
                     site_dict[parsed.netloc][0]++
