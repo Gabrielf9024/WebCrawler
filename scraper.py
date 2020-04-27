@@ -114,43 +114,37 @@ def too_similar(text1: str) -> bool:
 
 #Checks if valid uci link and not a trap
 def check_if_valid(url):
+    parsed = urlparse(url)
 
-    try:
-        parsed = urlparse(url)
-
-        is_uci = False
-        is_trap = True
-        is_sub = False
-        
-        urlRegex = re.compile('((ics.uci.edu)|(cs.uci.edu)|(informatics.uci.edu)|(stat.uci.edu)|(today.uci.edu/department/information_computer_sciences))')
-        if(urlRegex.search(parsed.netloc) != None):
-            is_uci = True
-
-        SubRegex = re.compile('(?:([a-zA-z]+[.]{0,1})*((ics.uci.edu)|(cs.uci.edu)|(informatics.uci.edu)|(stat.uci.edu)|(today.uci.edu/department/information_computer_sciences)))')
-        if(SubRegex.search(parsed.netloc) != None):
-            is_sub = True
-            
-        pathRegex = re.compile('(/.+?)(?:\1)+|(\?|&)[\w\W]+|(calendar)')
-        if(pathRegex.search(parsed.path) == None and parsed.query == ''):
-            is_trap = False
-            
-        valid = (is_uci and is_trap == False)
-        
-        if valid == True:
-            try:
-                site_dict[parsed.netloc] = (1,[parsed.path],is_sub)
-            except:
-                if parsed.path not in site_dict[parsed.netloc][1]:
-                    site_dict[parsed.netloc][0]++
-                    site_dict[parsed.netloc][1].append(parsed.path)
-                else:
-                    valid = False
-
-        return valid
+    is_uci = False
+    is_trap = True
+    is_sub = False
     
-    except TypeError:
-        print ("check_if_valid internal error for ", parsed)
-        raise
+    urlRegex = re.compile('((ics.uci.edu)|(cs.uci.edu)|(informatics.uci.edu)|(stat.uci.edu)|(today.uci.edu/department/information_computer_sciences))')
+    if(urlRegex.search(parsed.netloc) != None):
+        is_uci = True
+
+    SubRegex = re.compile('(?:([a-zA-z]+[.]{0,1})*((ics.uci.edu)|(cs.uci.edu)|(informatics.uci.edu)|(stat.uci.edu)|(today.uci.edu/department/information_computer_sciences)))')
+    if(SubRegex.search(parsed.netloc) != None):
+        is_sub = True
+        
+    pathRegex = re.compile('(/.+?)(?:\1)+|(\?|&)[\w\W]+|(calendar)')
+    if(pathRegex.search(parsed.path) == None and parsed.query == ''):
+        is_trap = False
+        
+    valid = (is_uci and is_trap == False)
+    
+    if valid == True:
+        try:
+            site_dict[parsed.netloc] = (1,[parsed.path],is_sub)
+        except:
+            if parsed.path not in site_dict[parsed.netloc][1]:
+                site_dict[parsed.netloc][0]++
+                site_dict[parsed.netloc][1].append(parsed.path)
+            else:
+                valid = False
+
+    return valid
         
 def is_valid(url):
     try:
