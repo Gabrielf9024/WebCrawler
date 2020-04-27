@@ -4,6 +4,9 @@ from nltk import word_tokenize
 from reppy.robots import Robots
 from urllib.parse import urlparse
 
+# This library can be found online at http://ekzhu.com/datasketch/index.html
+from datasketch import MinHash, MinHashLSH
+
 stop_words = {'about','above','after','again','against','all','am','an','and','any','are',
             'as', 'at', 'be', 'because', 'been', 'before', 'being', 'below', 'between',
             'both', 'but', 'by', 'cannot', 'could', 'did', 'do', 'does', 'doing', 'down', 'during', 'each', 
@@ -19,6 +22,12 @@ html_junk = {'http', 'https', 'function', 'return', 'important','var', 'ariel', 
 
 site_dict = dict();
 
+# This is the master MinHash that all documents are added into / checked against
+# We change the threshold to be the percent minimum a text needs to match
+# in similarity in order to be deemed 'too similar'
+lsh = MinHashLSH(threshold=0.9, num_perm=128)
+site_count = 0
+
 def scraper(url, resp):
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
@@ -32,6 +41,17 @@ def extract_next_links(url, resp):
         robot = Robots.fetch(robot_link);
         if (resp.status >= 200 and resp.raw_response != None):
             soup = BeautifulSoup(resp.raw_response.content,"html.parser")
+
+            # End the function if the url content is too similar to past urls
+            # If it is unique enough, add it to our knowledge base
+            site_count += 1
+            if too_similar(soup.get_text()):
+                return list()
+            else:
+                lsh.insert('url-' + str(site_count), soup.get_text())
+                # The above line inserts a new url content MinHash into our knowledge base
+                # They are labeled 'url-#'
+
             extract_tokens(soup)
             for link in soup.find_all('a'):
                 if link.get('href') != None and robot.allowed(link.get('href'),'IR S20 33805012,43145172,61658242'):
@@ -71,6 +91,26 @@ def get_link(url):
     parsed = urlparse(url)
     if(urlRegex.search(parsed.netloc) != None):
         return parsed.netloc + "/robots.txt";
+
+
+
+# Checks the text against the master
+# Returns true if too similar
+def too_similar(text1: str) -> bool:
+    data1 = re.split(r'\W+', text1)
+
+    # Create the MinHash using the text
+    mh = MinHash(num_perm=128)
+    for word in data1:
+        mh.update(word.encode('utf8'))
+
+    # Check the text for similarity. Result is a list of similar texts
+    result = lsh.query(mh)
+
+    # Return true if result is not empty i.e. If there are similarities with past texts
+    return not result == []
+
+
 
 #Checks if valid uci link and not a trap
 def check_if_valid(url):
