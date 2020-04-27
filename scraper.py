@@ -21,6 +21,7 @@ stop_words = {'about','above','after','again','against','all','am','an','and','a
 html_junk = {'http', 'https', 'function', 'return', 'important','var', 'ariel', 'emoji', 'tex2jax'} # i will add more
 
 site_dict = dict();
+word_dict = dict();
 
 # This is the master MinHash that all documents are added into / checked against
 # We change the threshold to be the percent minimum a text needs to match
@@ -89,8 +90,7 @@ def extract_tokens(soup):
 # Returns the link of the Robots.txt as a string
 def get_link(url):
     parsed = urlparse(url)
-    if(urlRegex.search(parsed.netloc) != None):
-        return parsed.netloc + "/robots.txt";
+    return parsed.netloc + "/robots.txt";
 
 
 
