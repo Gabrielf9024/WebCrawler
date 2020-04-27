@@ -80,10 +80,15 @@ def check_if_valid(url):
 
         is_uci = False
         is_trap = True
+        is_sub = False
         
-        urlRegex = re.compile('(?:([a-zA-z]+[.]{0,1})*(ics.uci.edu)|(cs.uci.edu)|(informatics.uci.edu)|(stat.uci.edu)|(today.uci.edu/department/information_computer_sciences))')
+        urlRegex = re.compile('((ics.uci.edu)|(cs.uci.edu)|(informatics.uci.edu)|(stat.uci.edu)|(today.uci.edu/department/information_computer_sciences))')
         if(urlRegex.search(parsed.netloc) != None):
             is_uci = True
+
+        SubRegex = re.compile('(?:([a-zA-z]+[.]{0,1})*((ics.uci.edu)|(cs.uci.edu)|(informatics.uci.edu)|(stat.uci.edu)|(today.uci.edu/department/information_computer_sciences)))')
+        if(SubRegex.search(parsed.netloc) != None):
+            is_sub = True
             
         pathRegex = re.compile('(/.+?)(?:\1)+|(\?|&)[\w\W]+|(calendar)')
         if(pathRegex.search(parsed.path) == None and parsed.query == ''):
@@ -93,7 +98,7 @@ def check_if_valid(url):
         
         if valid == True:
             try:
-                site_dict[parsed.netloc] = (1,[parsed.path])
+                site_dict[parsed.netloc] = (1,[parsed.path],is_sub)
             except:
                 if parsed.path not in site_dict[parsed.netloc][1]:
                     site_dict[parsed.netloc][0]++
