@@ -20,8 +20,10 @@ stop_words = {'about','above','after','again','against','all','am','an','and','a
             'while', 'who', 'whom', 'why', 'with', 'would', 'you', 'your', 'yours', 'yourself', 'yourselves'}
 html_junk = {'http', 'https', 'function', 'return', 'important','var', 'ariel', 'emoji', 'tex2jax'} # i will add more
 
-site_dict = dict();
-word_dict = dict();
+site_dict = dict()
+word_dict = dict()
+freq = {}
+largest_url = (url,0)
 
 # This is the master MinHash that all documents are added into / checked against
 # We change the threshold to be the percent minimum a text needs to match
@@ -53,38 +55,49 @@ def extract_next_links(url, resp):
                 # The above line inserts a new url content MinHash into our knowledge base
                 # They are labeled 'url-#'
 
-            extract_tokens(soup)
+            extract_tokens(url,soup)
             for link in soup.find_all('a'):
                 if link.get('href') != None and robot.allowed(link.get('href'),'IR S20 33805012,43145172,61658242'):
                     frontier_list.append(link.get('href'));
 
     return frontier_list
 
-def extract_tokens(soup):
-    freq = {}
-    token_file = open('tokens.txt','r')
-    for line in token_file: # works ok, i will try to make it better
-        t,c = line.split()
-        freq[t] = int(c)
-    token_file.close()
+def extract_tokens(url,soup):
+    # freq = {}
+    # token_file = open('tokens.txt','r')
+    # for line in token_file: # works ok, i will try to make it better
+    #     t,c = line.split()
+    #     freq[t] = int(c)
+    # token_file.close()
 
     raw = soup.get_text()
     all_tokens = word_tokenize(raw)
+    size = 0
 
     for t in all_tokens:
         t = t.lower()
         if re.match('^[a-zA-Z]+[a-z0-9]+$',t) and t not in stop_words and t not in html_junk:
+            size += 1
             if t in freq:
                 freq[t] += 1
             else:
                 freq[t] = 1
 
+    if size > largest_url[1]:
+        open('largest_info.txt','w').close()
+        largest_file = open('largest_info.txt','w')
+        largest_file.write('{} {}\n'.format(url,size))
+        largest_file.close()
+        largest_url = (url,size)
+
     descending = sorted(freq.items(), key=lambda x:x[1],reverse=True)
     open('tokens.txt','w').close() # clears previous dict
     token_file = open('tokens.txt','w')
 
+    counter = 1
     for t,c in descending: # writes token freq in txt file
-        token_file.write("{} {}\n".format(t,c))
+        token_file.write("{}. {} {}\n".format(counter,t,c))
+        counter += 1
     token_file.close()
     
 # Returns the link of the Robots.txt as a string
